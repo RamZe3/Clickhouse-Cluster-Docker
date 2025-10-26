@@ -20,37 +20,37 @@ services:
     
     zoo1:
         image: zookeeper:latest
-        expose:
-            - "2181"
-            - "2888"
-            - "3888"
+        ports:
+        - "2181:2181"
+        - "2888:2888"
+        - "3888:3888"
         environment:
             ZOO_MY_ID: "1"
-            ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+            ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
         networks: 
             - main  
 
     zoo2:
         image: zookeeper:latest
-        expose:
-            - "2181"
-            - "2888"
-            - "3888"
+        ports:
+        - "2182:2181"
+        - "2889:2888"
+        - "3889:3888"
         environment:
             ZOO_MY_ID: "2"
-            ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+            ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
         networks: 
             - main  
 
     zoo3:
         image: zookeeper:latest
-        expose:
-            - "2181"
-            - "2888"
-            - "3888"
+        ports:
+        - "2183:2181"
+        - "2890:2888"
+        - "3890:3888"
         environment:
             ZOO_MY_ID: "3"
-            ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+            ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
         networks: 
             - main  
 
@@ -61,12 +61,15 @@ services:
           - "9010"
           #client port
           - "9000"
+        ports:
+          - "8123:8123"
         depends_on: 
           - zoo1
           - zoo2
           - zoo3
         volumes:
           - ./config_1.xml:/etc/clickhouse-server/config.xml
+          - ./data1:/var/lib/clickhouse
         networks: 
             - main  
           
@@ -77,12 +80,15 @@ services:
           - "9011"
           #client port
           - "9000"
+        ports:
+          - "8124:8123"
         depends_on: 
           - zoo1
           - zoo2
           - zoo3
         volumes:
           - ./config_2.xml:/etc/clickhouse-server/config.xml
+          - ./data2:/var/lib/clickhouse
         networks: 
             - main  
 
@@ -93,11 +99,32 @@ services:
           - "9012"
           #client port
           - "9000"
+        ports:
+          - "8125:8123"
         depends_on: 
           - zoo1
           - zoo2
           - zoo3
         volumes:
           - ./config_3.xml:/etc/clickhouse-server/config.xml
+          - ./data3:/var/lib/clickhouse
         networks: 
             - main  
+
+    clickhouse-web-client:
+      image: spoonest/clickhouse-web-client
+      restart: always
+      ports:
+      - "8080:80"
+      networks: 
+            - main  
+
+    zk-webui:
+      image: tobilg/zookeeper-webui:latest
+      container_name: zk-web
+      ports:
+       - "8081:8080"
+      networks: 
+            - main  
+      environment:
+       ZK_DEFAULT_NODE: 127.0.0.1:2181

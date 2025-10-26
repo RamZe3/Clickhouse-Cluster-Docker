@@ -1,0 +1,16 @@
+clickhouse-client --host <адрес_сервера> --port 9000 --user <пользователь> --password <пароль>
+
+clickhouse-client --host haproxy --port 9000 --user default
+
+CREATE TABLE default.ExampleTable (ExDate default today(), SomeText String) ENGINE = ReplicatedMergeTree('/clickhouse/tables/example', '1', ExDate, (ExDate, SomeText), 8192)
+
+INSERT INTO default.ExampleTable (SomeText) VALUES ('Wow its replicating');
+SELECT * FROM default.ExampleTable
+
+CREATE TABLE my_distributed_table AS default.ExampleTable
+ENGINE = Distributed('example', 'default.ExampleTable', rand());
+
+CREATE TABLE my_distributed_table AS default.ExampleTable
+ENGINE = Distributed('example', 'default.ExampleTable', ExDate);
+
+INSERT INTO default.ExampleTable (ExDate, SomeText) VALUES ('2025-03-05 15:30:00', 'Первый');
